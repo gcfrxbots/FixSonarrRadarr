@@ -7,15 +7,17 @@ from selenium.webdriver.firefox.options import Options
 import time
 
 def setupFirefoxDriver():
-    # Use the same profile path that worked for Squarespace
-    profilePath = r"C:\Users\Grant\AppData\Roaming\Mozilla\Firefox\Profiles\gtcaey7c.automation"
-    profile = webdriver.FirefoxProfile(profilePath)
-    
-    # Set Firefox binary location
+    # Headless Firefox for CI/Linux (geckodriver and firefox must be in PATH)
     firefoxOptions = Options()
-    firefoxOptions.binary_location = r"C:\Program Files\Mozilla Firefox\firefox.exe"
-    
-    driver = webdriver.Firefox(firefox_profile=profile, options=firefoxOptions)
+    firefoxOptions.add_argument("-headless")  # no GUI
+    firefoxOptions.set_preference("dom.webdriver.enabled", False)
+    firefoxOptions.set_preference("useAutomationExtension", False)
+    # Ensure consistent viewport for reliable element interaction in headless
+    firefoxOptions.add_argument("--width=1920")
+    firefoxOptions.add_argument("--height=1080")
+
+    service = Service()  # uses geckodriver from PATH
+    driver = webdriver.Firefox(service=service, options=firefoxOptions)
     return driver
 
 # Create a single shared driver instance for all functions
