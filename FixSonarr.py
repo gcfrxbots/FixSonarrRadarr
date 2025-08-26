@@ -25,7 +25,7 @@ driver = setupFirefoxDriver()
 
 def fixStuckSonarrQueue():
     # Store the original URL to return to if needed
-    originalUrl = "http://truenas.local:30113/activity/queue"
+    originalUrl = "http://192.168.1.3:30113/activity/queue"
     
     try:
         # Navigate to Sonarr activity queue
@@ -343,7 +343,7 @@ def fixStuckSonarrQueue():
     
 
 def radarrGetWanted():
-    url = "http://truenas.local:30025/wanted/missing"
+    url = "http://192.168.1.3:30025/wanted/missing"
     
     # Use shared driver
     driver.get(url)
@@ -379,7 +379,7 @@ def radarrGetWanted():
 
 
 def sonarrGetWanted():
-    url = "http://truenas.local:30113/wanted/missing"
+    url = "http://192.168.1.3:30113/wanted/missing"
     
     # Use shared driver
     driver.get(url)
