@@ -29,10 +29,35 @@ def fixStuckQueue(url):
         print("Opening activity queue...")
         driver.get(url)
         
-        # Wait for page to load - look for Series header
+        # Wait for page to load - try multiple possible selectors
         print("Waiting for page to load...")
         wait = WebDriverWait(driver, 30)
-        seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+        
+        # Helper function to find page elements with flexible selectors
+        def waitForPageElement():
+            try:
+                return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+            except:
+                try:
+                    return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[title="Series"]')))
+                except:
+                    try:
+                        return wait.until(EC.presence_of_element_located((By.XPATH, "//th[contains(text(), 'Series')]")))
+                    except:
+                        try:
+                            return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'table')))
+                        except Exception as e:
+                            print(f"Could not find any table elements: {e}")
+                            print("Current page title:", driver.title)
+                            print("Current URL:", driver.current_url)
+                            return None
+        
+        # Try to find the page element
+        seriesHeader = waitForPageElement()
+        if not seriesHeader:
+            print("Failed to load page properly")
+            return
+        
         print("Page loaded successfully!")
         
         # One-time: click the Status column header to sort by status
@@ -52,8 +77,10 @@ def fixStuckQueue(url):
                 print(f"Not on Sonarr queue page (current: {currentUrl}), returning...")
                 driver.get(url)
                 time.sleep(3)
-                # Wait for page to load again
-                seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+                # Wait for page to load again with flexible selector
+                if not waitForPageElement():
+                    print("Failed to return to correct page")
+                    return False
                 print("Returned to Sonarr queue page")
                 return True
             return False
@@ -134,7 +161,9 @@ def fixStuckQueue(url):
                     
                     # Wait for page to load - look for Series header again
                     print("Waiting for page to reload...")
-                    seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+                    if not waitForPageElement():
+                        print("Failed to reload page properly")
+                        continue
                     print("Page reloaded successfully!")
                     time.sleep(2)
                     
@@ -291,7 +320,9 @@ def fixStuckQueue(url):
                     
                     # Wait for page to load - look for Series header again
                     print("Waiting for page to reload...")
-                    seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+                    if not waitForPageElement():
+                        print("Failed to reload page properly")
+                        continue
                     print("Page reloaded successfully!")
                     
                     # Additional wait to ensure page is fully stable
@@ -316,7 +347,9 @@ def fixStuckQueue(url):
                 
                 # Wait for page to load - look for Series header again
                 print("Waiting for page to reload...")
-                seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
+                if not waitForPageElement():
+                    print("Failed to reload page properly")
+                    continue
                 print("Page reloaded successfully!")
                 
                 # Additional wait to ensure page is fully stable
@@ -340,38 +373,43 @@ def fixStuckQueue(url):
     
 
 def getWanted(url):  
-    # Use shared driver
-    driver.get(url)
-    
-    # Wait for page
-    wait = WebDriverWait(driver, 20)
-    time.sleep(3)
-    
-    # Click "Search All"
     try:
-        searchAllButton = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'button[title="Search All"].PageToolbarButton-toolbarButton-j8a_b')
+        # Use shared driver
+        driver.get(url)
+        
+        # Wait for page
+        wait = WebDriverWait(driver, 20)
+        time.sleep(3)
+        
+        # Click "Search All"
+        try:
+            searchAllButton = wait.until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, 'button[title="Search All"].PageToolbarButton-toolbarButton-j8a_b')
+                )
             )
-        )
-        searchAllButton.click()
-        
-        time.sleep(1)
-        
-        # Click "Search" (red button)
-        searchButton = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'button.Button-danger-vthZW')
+            searchAllButton.click()
+            
+            time.sleep(1)
+            
+            # Click "Search" (red button)
+            searchButton = wait.until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, 'button.Button-danger-vthZW')
+                )
             )
-        )
-        searchButton.click()
+            searchButton.click()
+            
+            time.sleep(5)
+        except Exception as e:
+            print(f"Button not found, probably already pressed: {e}")
         
+        # Keep browser open for subsequent tasks
         time.sleep(5)
-    except:
-        print("Button not found, probably already pressed.")
-    
-    # Keep browser open for subsequent tasks
-    time.sleep(5)
+    except Exception as e:
+        print(f"Error in getWanted: {e}")
+        print("Current page title:", driver.title)
+        print("Current URL:", driver.current_url)
 
 
 if __name__ == "__main__":
