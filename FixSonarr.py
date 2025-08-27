@@ -23,14 +23,11 @@ def setupFirefoxDriver():
 # Create a single shared driver instance for all functions
 driver = setupFirefoxDriver()
 
-def fixStuckSonarrQueue():
-    # Store the original URL to return to if needed
-    originalUrl = "http://192.168.1.3:30113/activity/queue"
-    
+def fixStuckQueue(url):
     try:
         # Navigate to Sonarr activity queue
-        print("Opening Sonarr activity queue...")
-        driver.get(originalUrl)
+        print("Opening activity queue...")
+        driver.get(url)
         
         # Wait for page to load - look for Series header
         print("Waiting for page to load...")
@@ -51,9 +48,9 @@ def fixStuckSonarrQueue():
         # Function to check if we're on the correct page and return if needed
         def ensureCorrectPage():
             currentUrl = driver.current_url
-            if originalUrl not in currentUrl:
+            if url not in currentUrl:
                 print(f"Not on Sonarr queue page (current: {currentUrl}), returning...")
-                driver.get(originalUrl)
+                driver.get(url)
                 time.sleep(3)
                 # Wait for page to load again
                 seriesHeader = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'th[label="Series"]')))
@@ -342,9 +339,7 @@ def fixStuckSonarrQueue():
         print(f"An error occurred: {e}")
     
 
-def radarrGetWanted():
-    url = "http://192.168.1.3:30025/wanted/missing"
-    
+def getWanted(url):  
     # Use shared driver
     driver.get(url)
     
@@ -376,50 +371,19 @@ def radarrGetWanted():
         print("Button not found, probably already pressed.")
     
     # Keep browser open for subsequent tasks
-
-
-def sonarrGetWanted():
-    url = "http://192.168.1.3:30113/wanted/missing"
-    
-    # Use shared driver
-    driver.get(url)
-    
-    # Wait for page
-    wait = WebDriverWait(driver, 20)
-    time.sleep(3)
-    
-    # Click "Search All"
-    try:
-        searchAllButton = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'button[title="Search All"].PageToolbarButton-toolbarButton-j8a_b')
-            )
-        )
-        searchAllButton.click()
-        
-        time.sleep(1)
-        
-        # Click "Search" (red button)
-        searchButton = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'button.Button-danger-vthZW')
-            )
-        )
-        searchButton.click()
-        
-        time.sleep(5)
-    except:
-        print("Button not found, probably already pressed.")
+    time.sleep(5)
 
 
 if __name__ == "__main__":
     try:
-        fixStuckSonarrQueue()
-        time.sleep(5)
-        radarrGetWanted()
-        time.sleep(5)
-        sonarrGetWanted()
-    finally:
+        urls = ["http://192.168.1.3:30025/wanted/missing", "http://192.168.1.3:30113/wanted/missing"]
+        for url in urls:
+            fixStuckQueue(url)
+            time.sleep(5)
+            getWanted(url)
+
         # Close the shared browser at the end
         driver.quit()
         print("Browser closed")
+    except Exception as e:
+        print(f"An error occurred: {e}")
